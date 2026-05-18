@@ -1,17 +1,24 @@
 import time
 from urllib.parse import urlencode
 
+import httpx
 import jwt as pyjwt
 from authlib.integrations.starlette_client import OAuth, OAuthError
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..database import get_db
 from ..models import User
+from ..schemas import TokenOut
 from ..security import create_access_token
+
+
+class GoogleTokenIn(BaseModel):
+    access_token: str
 
 router = APIRouter(prefix="/auth", tags=["oauth"])
 
@@ -140,6 +147,60 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         name=info.get("name"),
     )
     return _redirect_with_token(create_access_token(str(user.id)))
+
+
+@router.post("/google/token", response_model=TokenOut)
+async def google_token(
+    payload: GoogleTokenIn, db: Session = Depends(get_db)
+) -> TokenOut:
+    """Exchange a Google OAuth access token (obtained client-side via
+    @react-oauth/google) for our own JWT.
+
+    Two-step verification with Google:
+      1. /tokeninfo  -> confirm the token is valid AND was issued to OUR
+         client ID (prevents tokens from other apps being replayed here).
+      2. /userinfo   -> pull the profile (sub/email/name)."""
+    if not settings.google_client_id:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google sign-in is not configured on the server",
+        )
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        tokeninfo = await client.get(
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"access_token": payload.access_token},
+        )
+        if tokeninfo.status_code != 200:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid Google access token",
+            )
+        if tokeninfo.json().get("aud") != settings.google_client_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Google token was not issued to this application",
+            )
+
+        userinfo = await client.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {payload.access_token}"},
+        )
+    if userinfo.status_code != 200:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not fetch Google profile",
+        )
+
+    info = userinfo.json()
+    user = _upsert_oauth_user(
+        db,
+        provider="google",
+        provider_sub=info["sub"],
+        email=info.get("email"),
+        name=info.get("name"),
+    )
+    return TokenOut(access_token=create_access_token(str(user.id)))
 
 
 # ---------- Apple ----------
