@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_user
-from ..models import User
+from ..models import Business, User
 from ..schemas import LoginIn, SignupIn, TokenOut, UserOut
 from ..security import create_access_token, hash_password, verify_password
 
@@ -23,9 +23,18 @@ def signup(data: SignupIn, db: Session = Depends(get_db)) -> TokenOut:
     user = User(
         email=data.email,
         name=data.name,
+        phone=data.phone,
         hashed_password=hash_password(data.password),
     )
     db.add(user)
+    db.flush()
+
+    if data.business is not None:
+        business = Business(user_id=user.id, **data.business.model_dump())
+        db.add(business)
+        db.flush()
+        user.active_business_id = business.id
+
     db.commit()
     db.refresh(user)
     return TokenOut(access_token=create_access_token(str(user.id)))
