@@ -3,6 +3,29 @@ from .schemas import ServiceOut
 
 SERVICES: list[ServiceOut] = [
     ServiceOut(
+        slug="full-service",
+        name="Full-service marketing partner",
+        tagline="One team. Every channel. Every deliverable.",
+        description=(
+            "DigiPros is your end-to-end marketing partner. Strategy, "
+            "paid media, SEO, content, web, email, analytics, and social "
+            "— all under one roof, scoped to your business and your "
+            "goals. One contract, one team, one set of dashboards."
+        ),
+        starts_at="Custom — tailored per engagement",
+        deliverables=[
+            "Brand strategy & identity systems",
+            "Paid advertising across Meta, Google, and TikTok",
+            "Search engine optimization & technical SEO",
+            "Content marketing, video, and editorial",
+            "Web design & high-converting landing pages",
+            "Email & CRM lifecycle automation",
+            "Analytics, attribution, and dashboards",
+            "Always-on social media management",
+        ],
+        icon="bundle",
+    ),
+    ServiceOut(
         slug="brand-strategy",
         name="Brand Strategy & Identity",
         tagline="Sharpen positioning, voice, and visual identity.",

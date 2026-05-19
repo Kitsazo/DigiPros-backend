@@ -7,22 +7,24 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 # ---------- Auth ----------
 
 
-class BusinessSignupInfo(BaseModel):
-    name: str = Field(min_length=1, max_length=255)
+class SignupIn(BaseModel):
+    """Create a new company account.
+
+    `company_name` is required because an account IS the company.
+    """
+
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+    contact_name: str | None = None
+    phone: str | None = None
+
+    company_name: str = Field(min_length=1, max_length=255)
     industry: str | None = None
-    size: str | None = None
+    company_size: str | None = None
     employee_count: int | None = Field(default=None, ge=0)
     yearly_revenue: float | None = Field(default=None, ge=0)
     website: str | None = None
-    phone: str | None = None
-
-
-class SignupIn(BaseModel):
-    email: EmailStr
-    password: str = Field(min_length=8, max_length=128)
-    name: str | None = None
-    phone: str | None = None
-    business: BusinessSignupInfo | None = None
+    business_phone: str | None = None
 
 
 class LoginIn(BaseModel):
@@ -35,7 +37,7 @@ class TokenOut(BaseModel):
     token_type: str = "bearer"
 
 
-# ---------- User ----------
+# ---------- User / company ----------
 
 
 class UserOut(BaseModel):
@@ -43,60 +45,48 @@ class UserOut(BaseModel):
 
     id: int
     email: EmailStr
-    name: str | None
+
+    contact_name: str | None
     phone: str | None
     avatar_url: str | None
     theme: str
-    active_business_id: int | None
-    created_at: datetime
 
-
-class UserUpdateIn(BaseModel):
-    name: str | None = None
-    phone: str | None = None
-    avatar_url: str | None = None
-    theme: Literal["light", "dark"] | None = None
-    active_business_id: int | None = None
-
-
-# ---------- Business ----------
-
-
-class BusinessIn(BaseModel):
-    name: str = Field(min_length=1, max_length=255)
-    industry: str | None = None
-    size: str | None = None
-    employee_count: int | None = Field(default=None, ge=0)
-    yearly_revenue: float | None = Field(default=None, ge=0)
-    website: str | None = None
-    phone: str | None = None
-    address_line1: str | None = None
-    city: str | None = None
-    state: str | None = None
-    postal_code: str | None = None
-    country: str | None = None
-    notes: str | None = None
-
-
-class BusinessOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    user_id: int
-    name: str
+    company_name: str
     industry: str | None
-    size: str | None
+    company_size: str | None
     employee_count: int | None
     yearly_revenue: float | None
     website: str | None
-    phone: str | None
+    business_phone: str | None
     address_line1: str | None
     city: str | None
     state: str | None
     postal_code: str | None
     country: str | None
     notes: str | None
+
     created_at: datetime
+
+
+class UserUpdateIn(BaseModel):
+    contact_name: str | None = None
+    phone: str | None = None
+    avatar_url: str | None = None
+    theme: Literal["light", "dark"] | None = None
+
+    company_name: str | None = Field(default=None, min_length=1, max_length=255)
+    industry: str | None = None
+    company_size: str | None = None
+    employee_count: int | None = Field(default=None, ge=0)
+    yearly_revenue: float | None = Field(default=None, ge=0)
+    website: str | None = None
+    business_phone: str | None = None
+    address_line1: str | None = None
+    city: str | None = None
+    state: str | None = None
+    postal_code: str | None = None
+    country: str | None = None
+    notes: str | None = None
 
 
 # ---------- Quote ----------
@@ -110,9 +100,9 @@ class QuoteIn(BaseModel):
     contact_email: EmailStr
     contact_phone: str | None = None
 
-    business_name: str = Field(min_length=1, max_length=255)
+    company_name: str = Field(min_length=1, max_length=255)
     industry: str | None = None
-    business_size: str | None = None
+    company_size: str | None = None
     employee_count: int | None = Field(default=None, ge=0)
     yearly_revenue: float | None = Field(default=None, ge=0)
 
@@ -122,15 +112,12 @@ class QuoteIn(BaseModel):
     notes: str | None = None
     referral_source: str | None = None
 
-    business_id: int | None = None
-
 
 class QuoteOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     user_id: int
-    business_id: int | None
 
     service_slug: str
     service_name: str
@@ -139,9 +126,9 @@ class QuoteOut(BaseModel):
     contact_email: EmailStr
     contact_phone: str | None
 
-    business_name: str
+    company_name: str
     industry: str | None
-    business_size: str | None
+    company_size: str | None
     employee_count: int | None
     yearly_revenue: float | None
 
@@ -168,6 +155,12 @@ class ServiceOut(BaseModel):
     icon: str
 
 
+class AnalyticsPoint(BaseModel):
+    label: str
+    spent: float
+    returned: float
+
+
 class AnalyticsOut(BaseModel):
     total_spent: float
     total_returned: float
@@ -177,13 +170,4 @@ class AnalyticsOut(BaseModel):
     impressions: int
     clicks: int
     conversions: int
-    history: list["AnalyticsPoint"]
-
-
-class AnalyticsPoint(BaseModel):
-    label: str
-    spent: float
-    returned: float
-
-
-AnalyticsOut.model_rebuild()
+    history: list[AnalyticsPoint]

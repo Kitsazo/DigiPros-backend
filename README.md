@@ -13,7 +13,7 @@ Backend/
     ├── main.py              # FastAPI app, CORS, session, router mounts
     ├── config.py            # env settings (pydantic-settings)
     ├── database.py          # engine, SessionLocal, get_db()
-    ├── models.py            # User, Business, QuoteRequest tables
+    ├── models.py            # User (company account), QuoteRequest
     ├── schemas.py           # request/response models
     ├── security.py          # bcrypt hashing + JWT (HS256)
     ├── deps.py              # get_current_user dependency
@@ -21,12 +21,16 @@ Backend/
     └── routers/
         ├── auth.py          # POST /auth/signup · /auth/login · GET /auth/me
         ├── oauth.py         # /auth/google · /auth/apple · /auth/providers
-        ├── users.py         # GET/PUT /users/me (profile + theme + active biz)
-        ├── businesses.py    # CRUD /businesses
+        ├── users.py         # GET/PUT /users/me (company + contact + theme)
         ├── services.py      # GET /services · GET /services/{slug}
         ├── quotes.py        # POST/GET /quotes
         └── analytics.py     # GET /analytics/me (placeholder metrics)
 ```
+
+Accounts are **company-based** — one company == one account. The
+`User` table stores both the login identity (email/password or OAuth)
+and the company it represents (company_name, industry, revenue, etc).
+There is no separate Business table.
 
 ## Run locally
 
@@ -44,27 +48,23 @@ just change `DATABASE_URL` — no code changes.
 
 ## Endpoints
 
-| Method | Path                       | Description                                                 |
-| ------ | -------------------------- | ----------------------------------------------------------- |
-| POST   | `/auth/signup`             | `{email, password, name?, phone?, business?}` → `{access_token}` |
-| POST   | `/auth/login`              | `{email, password}` → `{access_token}`                      |
-| GET    | `/auth/me`                 | Bearer token → current user                                 |
-| GET    | `/auth/providers`          | Which OAuth providers are configured                        |
-| GET    | `/auth/google/login`       | Redirect to Google                                          |
-| GET    | `/auth/google/callback`    | Google → `FRONTEND_URL/auth/callback?token=…`               |
-| GET    | `/auth/apple/login`        | Redirect to Apple                                           |
-| POST   | `/auth/apple/callback`     | Apple → `FRONTEND_URL/auth/callback?token=…`                |
-| GET    | `/users/me`                | Current user profile                                        |
-| PUT    | `/users/me`                | Update name/phone/theme/avatar/active business              |
-| GET    | `/businesses`              | List the caller's businesses                                |
-| POST   | `/businesses`              | Create a business (first one becomes the active business)   |
-| PUT    | `/businesses/{id}`         | Update a business                                           |
-| DELETE | `/businesses/{id}`         | Delete a business                                           |
-| GET    | `/services`                | List all DigiPros services                                  |
-| GET    | `/services/{slug}`         | Detail for a single service                                 |
-| POST   | `/quotes`                  | Submit a quote request                                      |
-| GET    | `/quotes`                  | List the caller's quote requests                            |
-| GET    | `/analytics/me`            | Placeholder analytics snapshot for the client portal        |
+| Method | Path                       | Description                                                                |
+| ------ | -------------------------- | -------------------------------------------------------------------------- |
+| POST   | `/auth/signup`             | Create company account: `{email, password, contact_name?, company_name, …}` |
+| POST   | `/auth/login`              | `{email, password}` → `{access_token}`                                     |
+| GET    | `/auth/me`                 | Bearer token → current user                                                |
+| GET    | `/auth/providers`          | Which OAuth providers are configured                                       |
+| GET    | `/auth/google/login`       | Redirect to Google                                                         |
+| GET    | `/auth/google/callback`    | Google → `FRONTEND_URL/auth/callback?token=…`                              |
+| GET    | `/auth/apple/login`        | Redirect to Apple                                                          |
+| POST   | `/auth/apple/callback`     | Apple → `FRONTEND_URL/auth/callback?token=…`                               |
+| GET    | `/users/me`                | Current company account (login + company fields)                           |
+| PUT    | `/users/me`                | Update company info, contact details, or theme                             |
+| GET    | `/services`                | List all DigiPros services                                                 |
+| GET    | `/services/{slug}`         | Detail for a single service                                                |
+| POST   | `/quotes`                  | Submit a quote request                                                     |
+| GET    | `/quotes`                  | List the caller's quote requests                                           |
+| GET    | `/analytics/me`            | Placeholder analytics snapshot for the client portal                       |
 
 ## OAuth setup (only when you're ready to enable each)
 

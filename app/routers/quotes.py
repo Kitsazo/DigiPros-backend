@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_user
-from ..models import Business, QuoteRequest, User
+from ..models import QuoteRequest, User
 from ..schemas import QuoteIn, QuoteOut
 from ..services_catalog import get_service
 
@@ -36,21 +36,10 @@ def create_quote(
             detail="Unknown service slug",
         )
 
-    business_id = data.business_id
-    if business_id is not None:
-        business = db.get(Business, business_id)
-        if not business or business.user_id != user.id:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Business not found"
-            )
-
-    payload = data.model_dump()
-    payload.pop("business_id", None)
     quote = QuoteRequest(
         user_id=user.id,
-        business_id=business_id,
         status="pending",
-        **payload,
+        **data.model_dump(),
     )
     db.add(quote)
     db.commit()

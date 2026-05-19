@@ -101,7 +101,16 @@ def _upsert_oauth_user(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"{provider} did not return an email; cannot create account",
             )
-        user = User(email=email, name=name, **{field: provider_sub})
+        # Accounts are company-based, but OAuth doesn't surface a company.
+        # Seed company_name with the person's name (or email handle) so the
+        # NOT NULL constraint is satisfied; the user can edit it in Settings.
+        seed_company = name or email.split("@")[0]
+        user = User(
+            email=email,
+            contact_name=name,
+            company_name=seed_company,
+            **{field: provider_sub},
+        )
         db.add(user)
 
     db.commit()
