@@ -87,7 +87,8 @@ def _upsert_oauth_user(
     provider_sub: str,
     email: str | None,
     name: str | None,
-) -> User:
+) -> tuple[User, bool]:
+    """Returns (user, is_new) where is_new is True only when a new row is created."""
     field = "google_id" if provider == "google" else "apple_id"
 
     user = db.scalar(select(User).where(getattr(User, field) == provider_sub))
@@ -101,9 +102,8 @@ def _upsert_oauth_user(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"{provider} did not return an email; cannot create account",
             )
-        # Accounts are company-based, but OAuth doesn't surface a company.
-        # Seed company_name with the person's name (or email handle) so the
-        # NOT NULL constraint is satisfied; the user can edit it in Settings.
+        # Seed a placeholder company name so the NOT NULL constraint is satisfied;
+        # the user will set the real company name in the setup step on the frontend.
         seed_company = name or email.split("@")[0]
         user = User(
             email=email,
@@ -112,10 +112,13 @@ def _upsert_oauth_user(
             **{field: provider_sub},
         )
         db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user, True
 
     db.commit()
     db.refresh(user)
-    return user
+    return user, False
 
 
 @router.get("/providers")
@@ -148,7 +151,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     if not info:
         info = await oauth.google.userinfo(token=token_data)
 
-    user = _upsert_oauth_user(
+    user, _ = _upsert_oauth_user(
         db,
         provider="google",
         provider_sub=info["sub"],
@@ -202,14 +205,14 @@ async def google_token(
         )
 
     info = userinfo.json()
-    user = _upsert_oauth_user(
+    user, is_new = _upsert_oauth_user(
         db,
         provider="google",
         provider_sub=info["sub"],
         email=info.get("email"),
         name=info.get("name"),
     )
-    return TokenOut(access_token=create_access_token(str(user.id)))
+    return TokenOut(access_token=create_access_token(str(user.id)), is_new=is_new)
 
 
 # ---------- Apple ----------
@@ -242,7 +245,7 @@ async def apple_callback(request: Request, db: Session = Depends(get_db)):
     # Apple's id_token is already validated by Authlib's token exchange; pull claims.
     claims = pyjwt.decode(id_token, options={"verify_signature": False})
 
-    user = _upsert_oauth_user(
+    user, _ = _upsert_oauth_user(
         db,
         provider="apple",
         provider_sub=claims["sub"],

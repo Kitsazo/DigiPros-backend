@@ -10,7 +10,8 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 class SignupIn(BaseModel):
     """Create a new company account.
 
-    `company_name` is required because an account IS the company.
+  Company fields are optional when signing up from the quote flow;
+  they can be completed on the quote form afterward.
     """
 
     email: EmailStr
@@ -18,11 +19,10 @@ class SignupIn(BaseModel):
     contact_name: str | None = None
     phone: str | None = None
 
-    company_name: str = Field(min_length=1, max_length=255)
+    company_name: str | None = Field(default=None, min_length=1, max_length=255)
     industry: str | None = None
-    company_size: str | None = None
-    employee_count: int | None = Field(default=None, ge=0)
-    yearly_revenue: float | None = Field(default=None, ge=0)
+    employee_count: str | None = None
+    yearly_revenue: str | None = None
     website: str | None = None
     business_phone: str | None = None
 
@@ -35,6 +35,7 @@ class LoginIn(BaseModel):
 class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    is_new: bool = False
 
 
 # ---------- User / company ----------
@@ -53,9 +54,8 @@ class UserOut(BaseModel):
 
     company_name: str
     industry: str | None
-    company_size: str | None
-    employee_count: int | None
-    yearly_revenue: float | None
+    employee_count: str | None
+    yearly_revenue: str | None
     website: str | None
     business_phone: str | None
     address_line1: str | None
@@ -66,6 +66,7 @@ class UserOut(BaseModel):
     notes: str | None
 
     created_at: datetime
+    has_password: bool = False
 
 
 class UserUpdateIn(BaseModel):
@@ -76,9 +77,8 @@ class UserUpdateIn(BaseModel):
 
     company_name: str | None = Field(default=None, min_length=1, max_length=255)
     industry: str | None = None
-    company_size: str | None = None
-    employee_count: int | None = Field(default=None, ge=0)
-    yearly_revenue: float | None = Field(default=None, ge=0)
+    employee_count: str | None = None
+    yearly_revenue: str | None = None
     website: str | None = None
     business_phone: str | None = None
     address_line1: str | None = None
@@ -87,6 +87,11 @@ class UserUpdateIn(BaseModel):
     postal_code: str | None = None
     country: str | None = None
     notes: str | None = None
+
+
+class PasswordChangeIn(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
 
 
 # ---------- Quote ----------
@@ -102,9 +107,8 @@ class QuoteIn(BaseModel):
 
     company_name: str = Field(min_length=1, max_length=255)
     industry: str | None = None
-    company_size: str | None = None
-    employee_count: int | None = Field(default=None, ge=0)
-    yearly_revenue: float | None = Field(default=None, ge=0)
+    employee_count: str | None = None
+    yearly_revenue: str | None = None
 
     monthly_budget: str | None = None
     timeline: str | None = None
@@ -128,9 +132,8 @@ class QuoteOut(BaseModel):
 
     company_name: str
     industry: str | None
-    company_size: str | None
-    employee_count: int | None
-    yearly_revenue: float | None
+    employee_count: str | None
+    yearly_revenue: str | None
 
     monthly_budget: str | None
     timeline: str | None

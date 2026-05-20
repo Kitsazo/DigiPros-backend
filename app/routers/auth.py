@@ -20,14 +20,14 @@ def signup(data: SignupIn, db: Session = Depends(get_db)) -> TokenOut:
             detail="Email already registered",
         )
 
+    company_name = (data.company_name or "").strip() or data.email.split("@")[0]
     user = User(
         email=data.email,
         hashed_password=hash_password(data.password),
         contact_name=data.contact_name,
         phone=data.phone,
-        company_name=data.company_name,
+        company_name=company_name,
         industry=data.industry,
-        company_size=data.company_size,
         employee_count=data.employee_count,
         yearly_revenue=data.yearly_revenue,
         website=data.website,
@@ -36,7 +36,10 @@ def signup(data: SignupIn, db: Session = Depends(get_db)) -> TokenOut:
     db.add(user)
     db.commit()
     db.refresh(user)
-    return TokenOut(access_token=create_access_token(str(user.id)))
+    return TokenOut(
+        access_token=create_access_token(str(user.id)),
+        is_new=True,
+    )
 
 
 @router.post("/login", response_model=TokenOut)
@@ -51,7 +54,10 @@ def login(data: LoginIn, db: Session = Depends(get_db)) -> TokenOut:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
-    return TokenOut(access_token=create_access_token(str(user.id)))
+    return TokenOut(
+        access_token=create_access_token(str(user.id)),
+        is_new=False,
+    )
 
 
 @router.get("/me", response_model=UserOut)

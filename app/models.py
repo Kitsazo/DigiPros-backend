@@ -3,8 +3,6 @@ from datetime import datetime
 from sqlalchemy import (
     DateTime,
     ForeignKey,
-    Integer,
-    Numeric,
     String,
     Text,
     func,
@@ -46,11 +44,8 @@ class User(Base):
     # Company / business identity (the account IS the company)
     company_name: Mapped[str] = mapped_column(String(255), index=True)
     industry: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    company_size: Mapped[str | None] = mapped_column(String(60), nullable=True)
-    employee_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    yearly_revenue: Mapped[float | None] = mapped_column(
-        Numeric(14, 2), nullable=True
-    )
+    employee_count: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    yearly_revenue: Mapped[str | None] = mapped_column(String(60), nullable=True)
 
     website: Mapped[str | None] = mapped_column(String(255), nullable=True)
     business_phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
@@ -69,6 +64,10 @@ class User(Base):
     quotes: Mapped[list["QuoteRequest"]] = relationship(
         "QuoteRequest", back_populates="user", cascade="all, delete-orphan"
     )
+
+    @property
+    def has_password(self) -> bool:
+        return self.hashed_password is not None
 
 
 class QuoteRequest(Base):
@@ -91,11 +90,8 @@ class QuoteRequest(Base):
 
     company_name: Mapped[str] = mapped_column(String(255))
     industry: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    company_size: Mapped[str | None] = mapped_column(String(60), nullable=True)
-    employee_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    yearly_revenue: Mapped[float | None] = mapped_column(
-        Numeric(14, 2), nullable=True
-    )
+    employee_count: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    yearly_revenue: Mapped[str | None] = mapped_column(String(60), nullable=True)
 
     monthly_budget: Mapped[str | None] = mapped_column(String(60), nullable=True)
     timeline: Mapped[str | None] = mapped_column(String(60), nullable=True)
