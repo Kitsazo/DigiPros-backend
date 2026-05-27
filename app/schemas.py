@@ -1,6 +1,4 @@
 from datetime import datetime
-from typing import Literal
-
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
@@ -50,7 +48,6 @@ class UserOut(BaseModel):
     contact_name: str | None
     phone: str | None
     avatar_url: str | None
-    theme: str
 
     company_name: str
     industry: str | None
@@ -73,7 +70,6 @@ class UserUpdateIn(BaseModel):
     contact_name: str | None = None
     phone: str | None = None
     avatar_url: str | None = None
-    theme: Literal["light", "dark"] | None = None
 
     company_name: str | None = Field(default=None, min_length=1, max_length=255)
     industry: str | None = None

@@ -21,7 +21,7 @@ Backend/
     └── routers/
         ├── auth.py          # POST /auth/signup · /auth/login · GET /auth/me
         ├── oauth.py         # /auth/google · /auth/apple · /auth/providers
-        ├── users.py         # GET/PUT /users/me (company + contact + theme)
+        ├── users.py         # GET/PUT /users/me (company + contact)
         ├── services.py      # GET /services · GET /services/{slug}
         ├── quotes.py        # POST/GET /quotes
         └── analytics.py     # GET /analytics/me (placeholder metrics)
@@ -59,7 +59,7 @@ just change `DATABASE_URL` — no code changes.
 | GET    | `/auth/apple/login`        | Redirect to Apple                                                          |
 | POST   | `/auth/apple/callback`     | Apple → `FRONTEND_URL/auth/callback?token=…`                               |
 | GET    | `/users/me`                | Current company account (login + company fields)                           |
-| PUT    | `/users/me`                | Update company info, contact details, or theme                             |
+| PUT    | `/users/me`                | Update company info and contact details                                     |
 | GET    | `/services`                | List all DigiPros services                                                 |
 | GET    | `/services/{slug}`         | Detail for a single service                                                |
 | POST   | `/quotes`                  | Submit a quote request                                                     |
