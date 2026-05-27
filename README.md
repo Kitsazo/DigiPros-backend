@@ -37,9 +37,9 @@ There is no separate Business table.
 ```bash
 cd Backend
 python -m venv .venv
-.venv\Scripts\activate         # PowerShell:  .venv\Scripts\Activate.ps1
+source .venv/bin/activate      # Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-copy .env.example .env          # then edit values
+cp .env.example .env            # on Windows use: copy .env.example .env
 uvicorn app.main:app --reload   # http://localhost:8000  (docs: /docs)
 ```
 
